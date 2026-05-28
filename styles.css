@@ -1,0 +1,357 @@
+/* =========================================
+   VARIABLES Y CONFIGURACIÓN BASE
+   ========================================= */
+:root {
+    --bg-color: #2a2a2a;
+    --text-light: #ffffff;
+    --pedestal-color: #4a4a4a;
+    --color-start: #FFB75E;
+    --color-end: #ED8F03;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+    background-color: #1a1a1a; 
+    
+    /* El centro tiene solo 20% de oscuridad, las orillas 80% */
+    background-image: 
+        radial-gradient(circle at center, rgba(15, 15, 15, 0.2) 0%, rgba(15, 15, 15, 0.8) 100%),
+        url('https://i.pinimg.com/736x/2a/fd/8f/2afd8fc0e5f5b3e54410d0bee5950fb7.jpg'); 
+        
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    
+    color: var(--text-light);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- NAVBAR --- */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 4rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    z-index: 100;
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.nav-links { display: flex; gap: 2rem; }
+.nav-links a {
+    color: var(--text-light);
+    text-decoration: none;
+    font-size: 0.9rem;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+}
+.nav-links a:hover { opacity: 1; }
+
+.btn-order {
+    background: transparent;
+    color: var(--text-light);
+    border: 1px solid var(--text-light);
+    padding: 0.8rem 2rem;
+    cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+}
+.btn-order:hover {
+    background: var(--text-light);
+    color: var(--bg-color);
+}
+
+/* --- HERO SECTION --- */
+.hero-section {
+    position: relative;
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+}
+
+.background-text-container {
+    position: absolute;
+    top: 15%;
+    width: 100%;
+    height: 300px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    z-index: 0;
+}
+
+.background-text {
+    position: absolute;
+    font-size: 14vw;
+    font-weight: 900;
+    letter-spacing: -2px;
+    text-transform: uppercase;
+    background: linear-gradient(to bottom, var(--color-start), var(--color-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    opacity: 0.8;
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.6s ease;
+}
+
+.text-enter-up { transform: translateY(100%); opacity: 0; }
+.text-enter-down { transform: translateY(-100%); opacity: 0; }
+.text-active { transform: translateY(0); opacity: 0.8; }
+.text-exit-up { transform: translateY(-100%); opacity: 0; }
+.text-exit-down { transform: translateY(100%); opacity: 0; }
+
+/* --- ESCENARIO Y RULETA 3D --- */
+.showcase-area {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.pedestal {
+    position: absolute;
+    bottom: 10%;
+    width: 450px;
+    height: 200px;
+    background: linear-gradient(145deg, #555, #333);
+    border-radius: 10px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 5px 15px rgba(255,255,255,0.1);
+    z-index: 5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.pedestal::after {
+    content: 'INDUSTRIAL SERIES';
+    font-weight: 900;
+    font-size: 2rem;
+    color: rgba(255,255,255,0.05);
+    letter-spacing: 5px;
+    transition: all 0.3s ease;
+}
+
+.boot-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    transform-style: preserve-3d;
+}
+
+.boot-image {
+    position: absolute;
+    width: 40%; 
+    max-width: 420px; 
+    filter: drop-shadow(0 40px 30px rgba(0,0,0,0.7));
+    transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+    bottom: 26%; 
+}
+
+.boot-active {
+    transform: translateX(0) rotateY(0deg) scale(1) rotate(-10deg);
+    opacity: 1;
+    z-index: 20;
+}
+.boot-next {
+    transform: translateX(50%) rotateY(-45deg) scale(0.6) rotate(0deg);
+    opacity: 0;
+    z-index: 10;
+}
+.boot-prev {
+    transform: translateX(-50%) rotateY(45deg) scale(0.6) rotate(0deg);
+    opacity: 0;
+    z-index: 10;
+}
+
+/* --- TARJETAS FLOTANTES --- */
+.floating-card {
+    position: absolute;
+    /* Efecto cristal (Glassmorphism) */
+    background: rgba(255, 255, 255, 0.08); 
+    backdrop-filter: blur(12px); 
+    -webkit-backdrop-filter: blur(12px);
+    
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px; /* Bordes redondeados para el cristal */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* Sombra para despegarla del fondo */
+    
+    padding: 1.5rem;
+    z-index: 30;
+    transition: all 0.3s ease;
+}
+
+.specs-card { left: 5%; bottom: 25%; }
+.specs-card h2 {
+    font-size: 4rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--color-start);
+    transition: color 0.6s ease;
+}
+.specs-card p { opacity: 0.8; font-size: 0.9rem; margin-top: 0.5rem; }
+
+.trust-score { right: 8%; top: 30%; }
+.trust-score h3 { font-size: 2.5rem; font-weight: bold; }
+.trust-score p { font-size: 0.8rem; opacity: 0.7; }
+
+.video-card {
+    right: 5%;
+    bottom: 12%;
+    background: #fff;
+    color: #000;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 300px;
+    padding: 1rem;
+}
+
+.play-btn {
+    background: var(--color-start);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.6s ease;
+}
+
+/* --- CONTROLES --- */
+.slider-controls {
+    position: absolute;
+    bottom: 4%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    align-items: center;
+    z-index: 40;
+}
+
+.slider-controls button {
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.slider-controls button:hover { opacity: 1; }
+.slider-controls .indicators { letter-spacing: 5px; opacity: 0.5; }
+
+/* Flotación continua */
+@keyframes float {
+    0% { transform: translateY(0px) rotate(-10deg); }
+    50% { transform: translateY(-15px) rotate(-12deg); }
+    100% { transform: translateY(0px) rotate(-10deg); }
+}
+.boot-active { animation: float 6s ease-in-out infinite; }
+
+/* =========================================
+   RESPONSIVIDAD (MEDIA QUERIES MEJORADAS)
+   ========================================= */
+
+/* Laptops pequeñas y Tablets en horizontal */
+@media (max-width: 1200px) {
+    .background-text { font-size: 18vw; }
+    .boot-image { max-width: 350px; bottom: 28%; }
+    .specs-card { transform: scale(0.85); left: 2%; }
+    .trust-score { transform: scale(0.85); right: 2%; }
+    .video-card { transform: scale(0.85); right: 2%; }
+    .pedestal { width: 380px; height: 180px; }
+}
+
+/* Tablets en vertical y Celulares grandes */
+@media (max-width: 900px) {
+    .navbar { padding: 1.5rem; }
+    .logo { font-size: 1.2rem; }
+    .nav-links { display: none; }
+    
+    /* Movemos el texto gigante más arriba */
+    .background-text-container { top: 8%; height: 120px; }
+    .background-text { font-size: 20vw; }
+    
+    /* El pedestal más chico y centrado */
+    .pedestal { width: 260px; height: 120px; bottom: 30%; }
+    .pedestal::after { font-size: 1rem; }
+    
+    /* La bota más controlada */
+    .boot-image { width: 65%; max-width: 280px; bottom: 35%; }
+    
+    /* Movemos las características (Nº 1) a la parte INFERIOR de la pantalla */
+    .specs-card { 
+        left: 50%; 
+        transform: translateX(-50%); 
+        bottom: 12%; 
+        top: auto; 
+        text-align: center; 
+        background: transparent; 
+        border: none; 
+        width: 100%;
+        padding: 0;
+    }
+    .specs-card h2 { font-size: 3rem; margin-bottom: 5px; }
+    .specs-card p { font-size: 1rem; }
+    
+    /* Ocultamos los extras en móvil para limpiar la pantalla */
+    .trust-score, .video-card { display: none; }
+    
+    /* Ajustamos los controles para que no se envuelvan feo */
+    .slider-controls { gap: 1.5rem; bottom: 3%; }
+    .slider-controls button { font-size: 0.8rem; letter-spacing: 1px; }
+    .slider-controls .indicators { display: none; } /* Ocultamos los puntitos en celular si estorban */
+}
+
+/* Celulares pequeños */
+@media (max-width: 500px) {
+    .navbar { padding: 1rem; }
+    .btn-order { padding: 0.5rem 1rem; font-size: 0.75rem; }
+    
+    .background-text-container { top: 10%; }
+    .background-text { font-size: 24vw; }
+    
+    .boot-image { width: 75%; max-width: 250px; bottom: 38%; }
+    .pedestal { width: 220px; height: 100px; bottom: 32%; }
+    
+    .specs-card { bottom: 10%; }
+    .specs-card h2 { font-size: 2.5rem; }
+}
