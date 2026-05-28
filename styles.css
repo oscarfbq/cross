@@ -30,7 +30,7 @@ body {
     
     color: var(--text-light);
     overflow: hidden;
-    height: 100dvh; /* Cambiado a dvh para que la barra del celular no corte el contenido */
+    height: 100dvh; /* Barra del celular no corta el contenido */
     display: flex;
     flex-direction: column;
 }
@@ -298,7 +298,8 @@ body {
     .logo { font-size: 1.5rem; }
     .nav-links { display: none; }
     
-    .background-text-container { top: 10%; height: auto; }
+    /* Mantiene abierto el contenedor para que el texto de fondo no se esconda */
+    .background-text-container { top: 10%; height: 150px; }
     
     /* Agrupamos la bota y el pedestal manteniéndolos proporcionados */
     .pedestal { bottom: 30%; }
