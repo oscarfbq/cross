@@ -1,165 +1,198 @@
-/**
- * BASE DE DATOS DE TUS BOTAS INDUSTRIALES (Tus 8 modelos)
- * Instrucciones: Reemplaza los enlaces en 'image' con las rutas a tus imágenes PNG transparentes.
- */
-const boots = [
-    {
-        name: "TITÁN",
-        feature: "Puntera de Acero",
-        colorStart: "#FFB75E", // Degradado Inicial
-        colorEnd: "#ED8F03",   // Degradado Final
-        image: "imagenes/bota.png"
-    },
-    {
-        name: "KRYPTON",
-        feature: "Protección Dieléctrica",
-        colorStart: "#4facfe", 
-        colorEnd: "#00f2fe",
-        image: "imagenes/bota.png"
-    },
-    {
-        name: "VULCAN",
-        feature: "Resistencia Térmica",
-        colorStart: "#ff0844", 
-        colorEnd: "#ffb199",
-        image: "imagenes/bota.png"
-    },
-    {
-        name: "ARMOR",
-        feature: "Suela Kevlar",
-        colorStart: "#11998e", 
-        colorEnd: "#38ef7d",
-        image: "imagenes/bota.png"
-    },
-    {
-        name: "STEEL",
-        feature: "Impermeabilidad Pro",
-        colorStart: "#667eea", 
-        colorEnd: "#764ba2",
-        image: "imagenes/bota.png"
-    },
-    {
-        name: "GOLIAT",
-        feature: "Soporte Tobillo 360",
-        colorStart: "#f79d00", 
-        colorEnd: "#64f38c",
-        image: "imagenes/bota.png"
-    },
-    {
-        name: "RHINO",
-        feature: "Plantilla Antifatiga",
-        colorStart: "#000000", 
-        colorEnd: "#434343",
-        image: "imagenes/bota.png"
-    },
-    {
-        name: "FALCON",
-        feature: "Ultraligera (Composite)",
-        colorStart: "#b224ef", 
-        colorEnd: "#7579ff",
-        image: "imagenes/bota.png"
-    }
+const productos = [
+
+{
+id:1,
+nombre:"Urban Black",
+precio:799,
+imagen:"img/camisa-negra.png"
+},
+
+{
+id:2,
+nombre:"Luxury White",
+precio:899,
+imagen:"img/camisa-blanca.png"
+},
+
+{
+id:3,
+nombre:"Emerald Premium",
+precio:999,
+imagen:"img/camisa-verde.png"
+}
+
 ];
 
-let currentIndex = 0;
-let isAnimating = false;
+let carrito = [];
 
-// Elementos del DOM
-const bootContainer = document.getElementById('bootContainer');
-const textContainer = document.getElementById('textContainer');
-const featureText = document.getElementById('featureText');
-const indicators = document.getElementById('indicators');
-const rootStyles = document.documentElement.style;
+const contenedor =
+document.getElementById("contenedorProductos");
 
-// Carga inicial
-function init() {
-    const boot = boots[currentIndex];
-    const img = document.createElement('img');
-    img.src = boot.image;
-    img.className = 'boot-image boot-active';
-    img.alt = boot.name;
-    bootContainer.appendChild(img);
+productos.forEach(producto=>{
 
-    rootStyles.setProperty('--color-start', boot.colorStart);
-    rootStyles.setProperty('--color-end', boot.colorEnd);
-    document.getElementById('bgTextCurrent').innerText = boot.name;
-    featureText.innerText = boot.feature;
-    updateIndicators();
+contenedor.innerHTML += `
+
+<div class="producto">
+
+<img
+src="${producto.imagen}"
+alt="${producto.nombre}">
+
+<h3>
+${producto.nombre}
+</h3>
+
+<p>
+$${producto.precio}
+</p>
+
+<select id="talla-${producto.id}">
+
+<option value="CH">
+CH
+</option>
+
+<option value="M">
+M
+</option>
+
+<option value="G">
+G
+</option>
+
+<option value="XL">
+XL
+</option>
+
+</select>
+
+<button
+onclick="agregarCarrito(${producto.id})">
+
+Agregar al carrito
+
+</button>
+
+</div>
+
+`;
+
+});
+
+function agregarCarrito(id){
+
+const producto =
+productos.find(
+p=>p.id===id
+);
+
+const talla =
+document.getElementById(
+`talla-${id}`
+).value;
+
+carrito.push({
+
+nombre:producto.nombre,
+precio:producto.precio,
+talla:talla,
+cantidad:1
+
+});
+
+actualizarCarrito();
+
 }
 
-// Lógica de transición
-function changeBoot(direction) {
-    if (isAnimating) return;
-    isAnimating = true;
+function actualizarCarrito(){
 
-    if (direction === 'next') {
-        currentIndex = (currentIndex + 1) % boots.length;
-    } else {
-        currentIndex = (currentIndex - 1 + boots.length) % boots.length;
-    }
+const lista =
+document.getElementById(
+"listaCarrito"
+);
 
-    const newBoot = boots[currentIndex];
+lista.innerHTML="";
 
-    // Animación de texto
-    const oldText = document.querySelector('.background-text.text-active');
-    const newText = document.createElement('div');
-    newText.className = 'background-text';
-    newText.innerText = newBoot.name;
-    
-    if (direction === 'next') {
-        newText.classList.add('text-enter-up');
-        oldText.classList.replace('text-active', 'text-exit-up');
-    } else {
-        newText.classList.add('text-enter-down');
-        oldText.classList.replace('text-active', 'text-exit-down');
-    }
-    textContainer.appendChild(newText);
+let total=0;
 
-    // Actualizar colores y textos
-    rootStyles.setProperty('--color-start', newBoot.colorStart);
-    rootStyles.setProperty('--color-end', newBoot.colorEnd);
-    featureText.innerText = newBoot.feature;
-    document.querySelector('.specs-card h2').innerText = `Nº ${currentIndex + 1}`;
+carrito.forEach(item=>{
 
-    // Animación de la ruleta de zapatos
-    const oldImg = document.querySelector('.boot-active');
-    const newImg = document.createElement('img');
-    newImg.src = newBoot.image;
-    newImg.className = `boot-image ${direction === 'next' ? 'boot-next' : 'boot-prev'}`;
-    newImg.alt = newBoot.name;
-    bootContainer.appendChild(newImg);
+total += item.precio;
 
-    void newImg.offsetWidth;
-    void newText.offsetWidth;
+lista.innerHTML += `
 
-    if (direction === 'next') {
-        oldImg.classList.replace('boot-active', 'boot-prev');
-    } else {
-        oldImg.classList.replace('boot-active', 'boot-next');
-    }
-    
-    newImg.className = 'boot-image boot-active';
-    newText.className = 'background-text text-active';
+<div class="item">
 
-    updateIndicators();
+<strong>
+${item.nombre}
+</strong>
 
-    setTimeout(() => {
-        oldImg.remove();
-        oldText.remove();
-        isAnimating = false;
-    }, 800); 
+<br>
+
+Talla:
+${item.talla}
+
+<br>
+
+$${item.precio}
+
+</div>
+
+`;
+
+});
+
+document.getElementById(
+"total"
+).innerText =
+"$" + total;
+
 }
 
-function updateIndicators() {
-    let dots = '';
-    for(let i=0; i<boots.length; i++) {
-        dots += i === currentIndex ? '● ' : '○ ';
-    }
-    indicators.innerText = dots.trim();
+function comprarWhatsApp(){
+
+if(carrito.length===0){
+
+alert(
+"Tu carrito está vacío"
+);
+
+return;
+
 }
 
-// Botones de control
-document.getElementById('btnNext').addEventListener('click', () => changeBoot('next'));
-document.getElementById('btnPrev').addEventListener('click', () => changeBoot('prev'));
+let total=0;
 
-window.onload = init;
+let mensaje =
+"Hola, quiero comprar:%0A%0A";
+
+carrito.forEach(item=>{
+
+mensaje +=
+`🛍️ ${item.nombre}%0A`;
+
+mensaje +=
+`Talla: ${item.talla}%0A`;
+
+mensaje +=
+`Cantidad: ${item.cantidad}%0A`;
+
+mensaje +=
+`Precio: $${item.precio}%0A%0A`;
+
+total += item.precio;
+
+});
+
+mensaje +=
+`💰 Total: $${total}`;
+
+window.open(
+
+`https://wa.me/524613267745?text=${mensaje}`,
+
+"_blank"
+
+);
+
+}
