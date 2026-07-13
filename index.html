@@ -1,97 +1,186 @@
 <!DOCTYPE html>
-
 <html lang="es">
-
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Luxury Shirts</title>
-
-<link rel="stylesheet" href="styles.css">
-
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablero de Extrusión</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
-
 <body>
+    <div class="board-container">
+        <!-- Encabezado del Tablero -->
+        <header class="board-header">
+            <div class="company-info">
+                <h2>STANDARD PROFIL</h2>
+                <div class="supervisor-grid">
+                    <p>Supervisor: <input type="text" value="Alfonso" class="header-input"></p>
+                    <p>Líder: <input type="text" value="Rogelio" class="header-input"></p>
+                </div>
+            </div>
+            
+            <div class="title-section">
+                <div class="line-selector-container">
+                    <span>LÍNEA:</span>
+                    <select id="line-select" class="line-dropdown">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4" selected>4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                    </select>
+                </div>
+                <h1>TABLERO DE EXTRUSIÓN</h1>
+                <div class="perfil-planeado">
+                    <div class="col">
+                        <p>Perfil a correr 1: <input type="text" value="H-393" class="header-input"></p>
+                        <p>Perfil a correr 2: <input type="text" value="H-390" class="header-input"></p>
+                    </div>
+                    <div class="col">
+                        <p>Cantidad Planeada 1: <input type="number" value="32000" class="header-input"></p>
+                        <p>Cantidad Planeada 2: <input type="number" value="9000" class="header-input"></p>
+                    </div>
+                </div>
+            </div>
 
-<header class="header">
+            <div class="date-info">
+                <p>Fecha: <input type="date" class="header-input" id="fecha-tablero"></p>
+                <p>Semana: <input type="number" value="28" style="width: 50px;" class="header-input"></p>
+                <div class="supervisor-grid right-align" style="margin-top: 10px;">
+                    
+            </div>
+        </header>
 
-<div class="logo">
-LUXURY
-</div>
+        <!-- Tabla de Producción -->
+        <div class="table-responsive">
+            <table class="production-table" id="production-table">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">HORARIO</th>
+                        <th class="vertical-text">Arranque / SMED</th>
+                        <th class="vertical-text">OPERACIÓN</th>
+                        <th class="vertical-text">PARO</th>
+                        <th style="width: 80px;">PERFIL</th>
+                        <th>Metros/Hora<br>Piezas/Hora</th>
+                        <th>Metros OK<br>Piezas OK</th>
+                        <th>Metros NoOk<br>Piezas NoOk</th>
+                        <th style="width: 120px;">MOTIVO</th>
+                        <th>% Scrap</th>
+                        <th>% Scrap<br>acumulado</th>
+                        <th style="width: 150px;">OBSERVACIONES</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- Se generarán 12 filas mediante JS para ahorrar espacio en el código -->
+                </tbody>
+            </table>
+        </div>
 
-<nav>
+        <!-- Botón para Exportar a Excel -->
+        <div class="export-container">
+            <button id="btn-exportar" class="export-btn">Descargar a Excel</button>
+        </div>
+    </div>
 
-<a href="#">Inicio</a> <a href="#">Colección</a> <a href="#">Contacto</a>
+    <script>
+        // 1. Generar las 12 horas dinámicamente
+        const tbody = document.getElementById('table-body');
+        let horaInicio = 7;
+        
+        for(let i = 0; i < 12; i++) {
+            let horaFin = horaInicio + 1;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="time-cell">${horaInicio}:00<br>${horaFin}:00</td>
+                <td class="status-cell" onclick="toggleColor(this)"></td>
+                <td class="status-cell" onclick="toggleColor(this)"></td>
+                <td class="status-cell" onclick="toggleColor(this)"></td>
+                <td><input type="text" class="input-field perfil-input"></td>
+                <td><input type="number" class="input-field total-input"></td>
+                <td><input type="number" class="input-field ok-input"></td>
+                <td><input type="number" class="input-field nook-input"></td>
+                <td><input type="text" class="input-field"></td>
+                <td><input type="text" class="input-field scrap-input" placeholder="%" readonly></td>
+                <td><input type="text" class="input-field scrap-acum-input" placeholder="%" readonly></td>
+                <td><input type="text" class="input-field"></td>
+            `;
+            tbody.appendChild(tr);
+            horaInicio = horaFin;
+        }
 
-</nav>
+        // 2. Función para pintar los cuadritos como con marcador (Blanco -> Verde -> Rojo -> Blanco)
+        function toggleColor(cell) {
+            const currentColor = cell.style.backgroundColor;
+            if (currentColor === 'rgb(40, 167, 69)') { // Si es verde, pasa a rojo
+                cell.style.backgroundColor = '#dc3545';
+            } else if (currentColor === 'rgb(220, 53, 69)') { // Si es rojo, regresa a blanco
+                cell.style.backgroundColor = '';
+            } else { // Si está vacío, pasa a verde
+                cell.style.backgroundColor = '#28a745';
+            }
+        }
 
-</header>
+        // 3. Calcular % Scrap y % Scrap Acumulado
+        document.getElementById('production-table').addEventListener('input', function(e) {
+            if(e.target.classList.contains('total-input') || e.target.classList.contains('nook-input')) {
+                const rows = document.querySelectorAll('#table-body tr');
+                let sumaTotal = 0;
+                let sumaNoOk = 0;
 
-<section class="hero">
+                rows.forEach(row => {
+                    const total = parseFloat(row.querySelector('.total-input').value) || 0;
+                    const noOk = parseFloat(row.querySelector('.nook-input').value) || 0;
+                    const scrapInput = row.querySelector('.scrap-input');
+                    const scrapAcumInput = row.querySelector('.scrap-acum-input');
 
-<h1>
-LUXURY
-<span>SHIRTS</span>
-</h1>
+                    // Scrap de la hora individual
+                    if(total > 0) {
+                        let scrapPercentage = (noOk / total) * 100;
+                        scrapInput.value = scrapPercentage.toFixed(2) + '%';
+                        scrapInput.style.color = scrapPercentage > 5 ? 'red' : '#28a745';
+                    } else {
+                        scrapInput.value = '';
+                    }
 
-<p>
-Diseños exclusivos para quienes buscan destacar.
-</p>
+                    // Acumulado
+                    if(total > 0 || noOk > 0) {
+                        sumaTotal += total;
+                        sumaNoOk += noOk;
+                        let scrapAcum = (sumaNoOk / sumaTotal) * 100;
+                        scrapAcumInput.value = scrapAcum.toFixed(2) + '%';
+                        scrapAcumInput.style.color = '#003366';
+                        scrapAcumInput.style.fontWeight = 'bold';
+                    } else {
+                        scrapAcumInput.value = '';
+                    }
+                });
+            }
+        });
 
-<a href="#productos">
-<button>
-VER COLECCIÓN
-</button>
-</a>
+        // 4. Exportar a Excel
+        document.getElementById('btn-exportar').addEventListener('click', function() {
+            const linea = document.getElementById('line-select').value;
+            const fecha = document.getElementById('fecha-tablero').value || "Sin_Fecha";
+            const nombreArchivo = `Tablero_Linea_${linea}_${fecha}.xlsx`;
+            const tablaOriginal = document.getElementById('production-table');
+            const tablaClon = tablaOriginal.cloneNode(true);
 
-</section>
+            const inputs = tablaClon.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.parentElement.textContent = input.value; 
+            });
 
-<section id="productos">
+            // Reemplazar celdas de color por texto "OK" o "PARO" para el Excel
+            const statusCells = tablaClon.querySelectorAll('.status-cell');
+            statusCells.forEach(cell => {
+                if (cell.style.backgroundColor === 'rgb(40, 167, 69)') cell.textContent = 'Verde';
+                else if (cell.style.backgroundColor === 'rgb(220, 53, 69)') cell.textContent = 'Rojo';
+            });
 
-<h2 class="titulo">
-COLECCIÓN PREMIUM
-</h2>
-
-<div id="contenedorProductos"
-class="productos-grid">
-
-</div>
-
-</section>
-
-<div class="carrito">
-
-<h2>
-🛒 Carrito
-</h2>
-
-<div id="listaCarrito">
-
-</div>
-
-<div class="total">
-
-Total: <span id="total">
-$0 </span>
-
-</div>
-
-<button
-class="btn-whatsapp"
-onclick="comprarWhatsApp()">
-
-Comprar por WhatsApp
-
-</button>
-
-</div>
-
-<script src="app.js"></script>
-
+            const wb = XLSX.utils.table_to_book(tablaClon, {sheet: `Línea ${linea}`});
+            XLSX.writeFile(wb, nombreArchivo);
+        });
+    </script>
 </body>
-
 </html>
