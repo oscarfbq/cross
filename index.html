@@ -35,13 +35,13 @@
                     <span style="margin-left: 20px;">TURNO:</span>
                     <select id="turno-select" class="line-dropdown">
                         <optgroup label="Turnos de 12 Horas">
-                            <option value="4" selected>1ro </option>
-                            <option value="5">2do </option>
+                            <option value="4" selected>1ro (07:00 a 19:00)</option>
+                            <option value="5">2do (19:00 a 07:00)</option>
                         </optgroup>
                         <optgroup label="Turnos de 8 Horas">
-                            <option value="1">1ro </option>
-                            <option value="2">2do </option>
-                            <option value="3">3ro </option>
+                            <option value="1">1ro (07:00 a 15:00)</option>
+                            <option value="2">2do (15:00 a 23:00)</option>
+                            <option value="3">3ro (23:00 a 07:00)</option>
                         </optgroup>
                     </select>
                 </div>
@@ -91,7 +91,7 @@
 
         <!-- Botones de Acción -->
         <div class="export-container" id="botones-accion">
-            <button id="btn-descargar-foto" class="save-btn">DESCARGAR</button>
+            <button id="btn-descargar-foto" class="save-btn">📷 Descargar como Foto</button>
         </div>
     </div>
 
@@ -166,33 +166,56 @@
             }
         }
 
-        // --- Función para Descargar como Foto ---
+        // --- Función para Descargar como Foto (Versión Forzar PC) ---
         document.getElementById('btn-descargar-foto').addEventListener('click', function() {
             const tablero = document.getElementById('tablero-principal');
             const contenedorBotones = document.getElementById('botones-accion');
+            const contenedorTabla = document.querySelector('.table-responsive');
             
+            // 1. Ocultamos el botón
             contenedorBotones.style.display = 'none';
             
-            html2canvas(tablero, {
-                scale: 2, 
-                backgroundColor: "#ffffff",
-                logging: false,
-                useCORS: true // Mejora el renderizado de elementos internos
-            }).then(canvas => {
-                contenedorBotones.style.display = 'flex';
-                
-                const fecha = document.getElementById('fecha-tablero').value || "Sin_Fecha";
-                const linea = document.getElementById('line-select').value;
-                const link = document.createElement('a');
-                
-                link.download = `Tablero_Linea${linea}_${fecha}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            }).catch(err => {
-                console.error("Error al generar la imagen:", err);
-                alert("Hubo un problema al crear la imagen.");
-                contenedorBotones.style.display = 'flex'; 
-            });
+            // 2. Respaldamos los estilos actuales
+            const estilosOriginalesTablero = tablero.style.cssText;
+            const estilosOriginalesTabla = contenedorTabla.style.cssText;
+            
+            // 3. Forzamos la vista de computadora para la foto
+            tablero.style.width = '1400px';
+            tablero.style.maxWidth = '1400px';
+            tablero.style.margin = '0';
+            contenedorTabla.style.overflowX = 'visible'; // Evita que se corte la tabla en el teléfono
+            
+            // Le damos un milisegundo al teléfono para que procese el cambio de tamaño
+            setTimeout(() => {
+                html2canvas(tablero, {
+                    scale: 2, 
+                    backgroundColor: "#ffffff",
+                    logging: false,
+                    useCORS: true,
+                    windowWidth: 1400 // Le dice a la librería que capture como si estuviera en PC
+                }).then(canvas => {
+                    // 4. Restauramos todo a la normalidad instantáneamente
+                    tablero.style.cssText = estilosOriginalesTablero;
+                    contenedorTabla.style.cssText = estilosOriginalesTabla;
+                    contenedorBotones.style.display = 'flex';
+                    
+                    // Descargamos
+                    const fecha = document.getElementById('fecha-tablero').value || "Sin_Fecha";
+                    const linea = document.getElementById('line-select').value;
+                    const link = document.createElement('a');
+                    
+                    link.download = `Tablero_Linea${linea}_${fecha}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }).catch(err => {
+                    console.error("Error al generar la imagen:", err);
+                    alert("Hubo un problema al crear la imagen.");
+                    // Si falla, de todos modos restauramos a la normalidad
+                    tablero.style.cssText = estilosOriginalesTablero;
+                    contenedorTabla.style.cssText = estilosOriginalesTabla;
+                    contenedorBotones.style.display = 'flex'; 
+                });
+            }, 150);
         });
     </script>
 </body>
