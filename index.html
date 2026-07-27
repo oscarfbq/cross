@@ -74,7 +74,14 @@
                         <th class="vertical-text"><span>OPERACIÓN</span></th>
                         <th class="vertical-text"><span>PARO</span></th>
                         <th style="width: 90px;">PERFIL</th>
-                        <th>Metros/Hora<br>Piezas/Hora</th>
+                        <!-- Selector global DISCRETO en el encabezado azul -->
+                        <th style="width: 100px;">
+                            Metros/Hora<br>Piezas/Hora<br>
+                            <select id="global-unidad-select" style="background-color: var(--primary); color: #fff; border: 1px solid var(--border-light); border-radius: 4px; font-size: 0.7rem; padding: 2px; margin-top: 5px; cursor: pointer; outline: none; width: 90%;">
+                                <option value="P" style="color: black; background: white;"> PIEZAS</option>
+                                <option value="M" style="color: black; background: white;"> METROS</option>
+                            </select>
+                        </th>
                         <th>Metros OK<br>Piezas OK</th>
                         <th>Metros NoOk<br>Piezas NoOk</th>
                         <th style="width: 140px;">MOTIVO</th>
@@ -91,11 +98,11 @@
 
         <!-- Botones de Acción -->
         <div class="export-container" id="botones-accion">
-            <button id="btn-descargar-foto" class="save-btn">DESCARGAR</button>
+            <button id="btn-descargar-foto" class="save-btn"> DESCARGAR</button>
         </div>
     </div>
 
-    <!-- Lógica de Interfaz -->
+    <!-- Lógica de Interfaz y Cálculos -->
     <script>
         const tbody = document.getElementById('table-body');
         
@@ -126,6 +133,7 @@
                     <td class="status-cell" onclick="toggleColor(this)"></td>
                     <td><input type="text" class="input-field perfil-input"></td>
                     
+                    <!-- Celda de meta limpia, sin selector -->
                     <td><input type="number" class="input-field total-input"></td>
                     
                     <td class="split-cell">
@@ -140,8 +148,8 @@
                     </td>
                     
                     <td><input type="text" class="input-field motivo-input"></td>
-                    <td><input type="text" class="input-field scrap-input"></td>
-                    <td><input type="text" class="input-field scrap-acum-input"></td>
+                    <td><input type="text" class="input-field scrap-input" readonly></td>
+                    <td><input type="text" class="input-field scrap-acum-input" readonly></td>
                     <td><input type="text" class="input-field obs-input"></td>
                 `;
                 tbody.appendChild(tr);
@@ -166,40 +174,99 @@
             }
         }
 
+        // --- Función Central de Cálculos leyendo el Selector Global ---
+        function realizarCalculos() {
+            const rows = document.querySelectorAll('#table-body tr');
+            const unidadGlobal = document.getElementById('global-unidad-select').value; 
+            
+            let sumaOkAcumulada = 0;
+            let sumaNoOkAcumulada = 0;
+
+            rows.forEach(row => {
+                const strOkP = row.querySelector('.ok-p-input').value;
+                const strOkM = row.querySelector('.ok-m-input').value;
+                const strNoOkP = row.querySelector('.nook-p-input').value;
+                const strNoOkM = row.querySelector('.nook-m-input').value;
+
+                let valOk = 0;
+                let valNoOk = 0;
+
+                // Si seleccionaste P en el encabezado, omite los metros. Si seleccionaste M, omite las piezas.
+                if (unidadGlobal === "P") {
+                    valOk = parseFloat(strOkP) || 0;
+                    valNoOk = parseFloat(strNoOkP) || 0;
+                } else if (unidadGlobal === "M") {
+                    valOk = parseFloat(strOkM) || 0;
+                    valNoOk = parseFloat(strNoOkM) || 0;
+                }
+
+                const scrapInput = row.querySelector('.scrap-input');
+                const scrapAcumInput = row.querySelector('.scrap-acum-input');
+
+                // 1. Scrap de la fila: (No OK / OK) * 100
+                if(valOk > 0) {
+                    let scrapPercentage = (valNoOk / valOk) * 100;
+                    scrapInput.value = scrapPercentage.toFixed(1) + '%';
+                    scrapInput.style.color = scrapPercentage > 5 ? '#e53935' : '#00a650';
+                } else if (valNoOk > 0) {
+                    scrapInput.value = '100%'; 
+                } else {
+                    scrapInput.value = '';
+                }
+
+                // 2. Scrap Acumulado: ((Suma OK + Suma No OK) / Suma No OK) * 100 (Fórmula exacta pedida)
+                if(valOk > 0 || valNoOk > 0) {
+                    sumaOkAcumulada += valOk;
+                    sumaNoOkAcumulada += valNoOk;
+                    
+                    if(sumaNoOkAcumulada > 0) {
+                        let scrapAcum = ((sumaOkAcumulada + sumaNoOkAcumulada) / sumaNoOkAcumulada) * 100;
+                        scrapAcumInput.value = scrapAcum.toFixed(1) + '%';
+                        scrapAcumInput.style.color = '#d32f2f';
+                    } else {
+                        scrapAcumInput.value = '0%';
+                    }
+                } else {
+                    scrapAcumInput.value = '';
+                }
+            });
+        }
+
+        // Ejecutar los cálculos al teclear números o al cambiar el selector global de M o P
+        const tabla = document.getElementById('production-table');
+        const selectorGlobal = document.getElementById('global-unidad-select');
+        
+        tabla.addEventListener('input', realizarCalculos);
+        selectorGlobal.addEventListener('change', realizarCalculos);
+
         // --- Función para Descargar como Foto (Versión Forzar PC) ---
         document.getElementById('btn-descargar-foto').addEventListener('click', function() {
             const tablero = document.getElementById('tablero-principal');
             const contenedorBotones = document.getElementById('botones-accion');
             const contenedorTabla = document.querySelector('.table-responsive');
             
-            // 1. Ocultamos el botón
             contenedorBotones.style.display = 'none';
             
-            // 2. Respaldamos los estilos actuales
             const estilosOriginalesTablero = tablero.style.cssText;
             const estilosOriginalesTabla = contenedorTabla.style.cssText;
             
-            // 3. Forzamos la vista de computadora para la foto
             tablero.style.width = '1400px';
             tablero.style.maxWidth = '1400px';
             tablero.style.margin = '0';
-            contenedorTabla.style.overflowX = 'visible'; // Evita que se corte la tabla en el teléfono
+            contenedorTabla.style.overflowX = 'visible';
             
-            // Le damos un milisegundo al teléfono para que procese el cambio de tamaño
             setTimeout(() => {
                 html2canvas(tablero, {
                     scale: 2, 
                     backgroundColor: "#ffffff",
                     logging: false,
                     useCORS: true,
-                    windowWidth: 1400 // Le dice a la librería que capture como si estuviera en PC
+                    windowWidth: 1400
                 }).then(canvas => {
-                    // 4. Restauramos todo a la normalidad instantáneamente
                     tablero.style.cssText = estilosOriginalesTablero;
                     contenedorTabla.style.cssText = estilosOriginalesTabla;
                     contenedorBotones.style.display = 'flex';
                     
-                    // Descargamos
                     const fecha = document.getElementById('fecha-tablero').value || "Sin_Fecha";
                     const linea = document.getElementById('line-select').value;
                     const link = document.createElement('a');
@@ -210,7 +277,6 @@
                 }).catch(err => {
                     console.error("Error al generar la imagen:", err);
                     alert("Hubo un problema al crear la imagen.");
-                    // Si falla, de todos modos restauramos a la normalidad
                     tablero.style.cssText = estilosOriginalesTablero;
                     contenedorTabla.style.cssText = estilosOriginalesTabla;
                     contenedorBotones.style.display = 'flex'; 
