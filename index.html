@@ -35,13 +35,13 @@
                     <span style="margin-left: 20px;">TURNO:</span>
                     <select id="turno-select" class="line-dropdown">
                         <optgroup label="Turnos de 12 Horas">
-                            <option value="4" selected>1ro </option>
-                            <option value="5">2do </option>
+                            <option value="4" selected>1ro (07:00 a 19:00)</option>
+                            <option value="5">2do (19:00 a 07:00)</option>
                         </optgroup>
                         <optgroup label="Turnos de 8 Horas">
-                            <option value="1">1ro </option>
-                            <option value="2">2do </option>
-                            <option value="3">3ro </option>
+                            <option value="1">1ro (07:00 a 15:00)</option>
+                            <option value="2">2do (15:00 a 23:00)</option>
+                            <option value="3">3ro (23:00 a 07:00)</option>
                         </optgroup>
                     </select>
                 </div>
@@ -74,18 +74,11 @@
                         <th class="vertical-text"><span>OPERACIÓN</span></th>
                         <th class="vertical-text"><span>PARO</span></th>
                         <th style="width: 90px;">PERFIL</th>
-                        <!-- Selector global DISCRETO en el encabezado azul -->
-                        <th style="width: 100px;">
-                            Metros/Hora<br>Piezas/Hora<br>
-                            <select id="global-unidad-select" style="background-color: var(--primary); color: #fff; border: 1px solid var(--border-light); border-radius: 4px; font-size: 0.7rem; padding: 2px; margin-top: 5px; cursor: pointer; outline: none; width: 90%;">
-                                <option value="P" style="color: black; background: white;"> PIEZAS</option>
-                                <option value="M" style="color: black; background: white;"> METROS</option>
-                            </select>
-                        </th>
+                        <th style="width: 100px;">Metros/Hora<br>Piezas/Hora</th>
                         <th>Metros OK<br>Piezas OK</th>
                         <th>Metros NoOk<br>Piezas NoOk</th>
                         <th style="width: 140px;">MOTIVO</th>
-                        <th>% Scrap</th>
+                        <th>Scrap</th>
                         <th>% Scrap<br>acumulado</th>
                         <th style="width: 160px;">OBSERVACIONES</th>
                     </tr>
@@ -98,7 +91,7 @@
 
         <!-- Botones de Acción -->
         <div class="export-container" id="botones-accion">
-            <button id="btn-descargar-foto" class="save-btn"> DESCARGAR</button>
+            <button id="btn-descargar-foto" class="save-btn">📷 Descargar como Foto</button>
         </div>
     </div>
 
@@ -133,8 +126,7 @@
                     <td class="status-cell" onclick="toggleColor(this)"></td>
                     <td><input type="text" class="input-field perfil-input"></td>
                     
-                    <!-- Celda de meta limpia, sin selector -->
-                    <td><input type="number" class="input-field total-input"></td>
+                    <td><input type="number" class="input-field total-input" placeholder="Meta"></td>
                     
                     <td class="split-cell">
                         <svg class="diagonal-line" width="100%" height="100%"><line x1="0" y1="100%" x2="100%" y2="0" stroke="#666666" stroke-width="1.5"></line></svg>
@@ -174,10 +166,9 @@
             }
         }
 
-        // --- Función Central de Cálculos leyendo el Selector Global ---
+        // --- Cálculos Matemáticos ---
         function realizarCalculos() {
             const rows = document.querySelectorAll('#table-body tr');
-            const unidadGlobal = document.getElementById('global-unidad-select').value; 
             
             let sumaOkAcumulada = 0;
             let sumaNoOkAcumulada = 0;
@@ -187,42 +178,43 @@
                 const strOkM = row.querySelector('.ok-m-input').value;
                 const strNoOkP = row.querySelector('.nook-p-input').value;
                 const strNoOkM = row.querySelector('.nook-m-input').value;
-
-                let valOk = 0;
-                let valNoOk = 0;
-
-                // Si seleccionaste P en el encabezado, omite los metros. Si seleccionaste M, omite las piezas.
-                if (unidadGlobal === "P") {
-                    valOk = parseFloat(strOkP) || 0;
-                    valNoOk = parseFloat(strNoOkP) || 0;
-                } else if (unidadGlobal === "M") {
-                    valOk = parseFloat(strOkM) || 0;
-                    valNoOk = parseFloat(strNoOkM) || 0;
-                }
+                
+                // Meta de la fila
+                const meta = parseFloat(row.querySelector('.total-input').value) || 0;
+                
+                // Unificamos el valor ingresado sin importar si es Pieza o Metro
+                let valOk = (parseFloat(strOkP) || 0) + (parseFloat(strOkM) || 0);
+                let valNoOk = (parseFloat(strNoOkP) || 0) + (parseFloat(strNoOkM) || 0);
 
                 const scrapInput = row.querySelector('.scrap-input');
                 const scrapAcumInput = row.querySelector('.scrap-acum-input');
 
-                // 1. Scrap de la fila: (No OK / OK) * 100
-                if(valOk > 0) {
-                    let scrapPercentage = (valNoOk / valOk) * 100;
-                    scrapInput.value = scrapPercentage.toFixed(1) + '%';
-                    scrapInput.style.color = scrapPercentage > 5 ? '#e53935' : '#00a650';
-                } else if (valNoOk > 0) {
-                    scrapInput.value = '100%'; 
+                // 1. Scrap de la fila: (No OK / Meta) * 100
+                if (meta > 0) {
+                    if (strNoOkM !== "" || strOkM !== "" || strNoOkP !== "" || strOkP !== "") {
+                        let scrapFila = (valNoOk / meta) * 100;
+                        scrapInput.value = parseFloat(scrapFila.toFixed(1)) + '%';
+                        scrapInput.style.color = scrapFila > 5 ? '#e53935' : '#00a650';
+                    } else {
+                        scrapInput.value = '';
+                    }
+                } else if (meta === 0 && valNoOk > 0) {
+                    scrapInput.value = 'Falta Meta'; 
                 } else {
                     scrapInput.value = '';
                 }
 
-                // 2. Scrap Acumulado: ((Suma OK + Suma No OK) / Suma No OK) * 100 (Fórmula exacta pedida)
-                if(valOk > 0 || valNoOk > 0) {
+                // 2. Scrap Acumulado: (Suma No OK / (Suma OK + Suma No OK)) * 100 
+                if (valOk > 0 || valNoOk > 0) {
                     sumaOkAcumulada += valOk;
                     sumaNoOkAcumulada += valNoOk;
                     
-                    if(sumaNoOkAcumulada > 0) {
-                        let scrapAcum = ((sumaOkAcumulada + sumaNoOkAcumulada) / sumaNoOkAcumulada) * 100;
-                        scrapAcumInput.value = scrapAcum.toFixed(1) + '%';
-                        scrapAcumInput.style.color = '#d32f2f';
+                    let totalAcumulado = sumaOkAcumulada + sumaNoOkAcumulada;
+
+                    if (totalAcumulado > 0) {
+                        let scrapAcum = (sumaNoOkAcumulada / totalAcumulado) * 100;
+                        scrapAcumInput.value = parseFloat(scrapAcum.toFixed(1)) + '%';
+                        scrapAcumInput.style.color = scrapAcum > 5 ? '#e53935' : '#00a650'; 
                     } else {
                         scrapAcumInput.value = '0%';
                     }
@@ -232,14 +224,11 @@
             });
         }
 
-        // Ejecutar los cálculos al teclear números o al cambiar el selector global de M o P
         const tabla = document.getElementById('production-table');
-        const selectorGlobal = document.getElementById('global-unidad-select');
         
         tabla.addEventListener('input', realizarCalculos);
-        selectorGlobal.addEventListener('change', realizarCalculos);
 
-        // --- Función para Descargar como Foto (Versión Forzar PC) ---
+        // --- Descargar como Foto ---
         document.getElementById('btn-descargar-foto').addEventListener('click', function() {
             const tablero = document.getElementById('tablero-principal');
             const contenedorBotones = document.getElementById('botones-accion');
