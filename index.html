@@ -1,4 +1,209 @@
-// --- NUEVA MATEMÁTICA: Piezas[i-1] + Metros[i] = Piezas[i] ---
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tablero de Extrusión - Standard Profil</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="board-container" id="tablero-principal">
+        <header class="board-header">
+            <div class="company-info">
+                <h2>STANDARD PROFIL</h2>
+                <div class="supervisor-grid">
+                    <p>Supervisor: <input type="text" class="header-input" id="inp-supervisor"></p>
+                    <p>Líder: <input type="text" class="header-input" id="inp-lider"></p>
+                </div>
+            </div>
+            
+            <div class="title-section">
+                <div class="line-selector-container">
+                    <span>LÍNEA:</span>
+                    <select id="line-select" class="line-dropdown">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4" selected>4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                    </select>
+                    
+                    <span style="margin-left: 20px;">TURNO:</span>
+                    <select id="turno-select" class="line-dropdown">
+                        <optgroup label="Turnos de 12 Horas">
+                            <option value="4" selected>1ro </option>
+                            <option value="5">2do </option>
+                        </optgroup>
+                        <optgroup label="Turnos de 8 Horas">
+                            <option value="1">1ro </option>
+                            <option value="2">2do </option>
+                            <option value="3">3ro </option>
+                        </optgroup>
+                    </select>
+                </div>
+                <h1>TABLERO DE EXTRUSIÓN</h1>
+                <div class="perfil-planeado">
+                    <div class="col">
+                        <p>Perfil a correr 1: <input type="text" class="header-input" id="inp-perfil1"></p>
+                        <p>Perfil a correr 2: <input type="text" class="header-input" id="inp-perfil2"></p>
+                    </div>
+                    <div class="col">
+                        <p>Cantidad Planeada 1: <input type="number" class="header-input" id="inp-cant1"></p>
+                        <p>Cantidad Planeada 2: <input type="number" class="header-input" id="inp-cant2"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="date-info">
+                <p>Fecha: <input type="date" class="header-input" id="fecha-tablero"></p>
+                <p>Semana: <input type="number" style="width: 80px;" class="header-input" id="inp-semana"></p>
+            </div>
+        </header>
+
+        <div class="table-responsive">
+            <table class="production-table" id="production-table">
+                <thead>
+                    <tr>
+                        <th style="width: 85px;">HORARIO</th>
+                        <th class="vertical-text"><span>Arranque / SMED</span></th>
+                        <th class="vertical-text"><span>OPERACIÓN</span></th>
+                        <th class="vertical-text"><span>PARO</span></th>
+                        <th style="width: 90px;">PERFIL</th>
+                        <th style="width: 100px;">Metros/Hora<br>Piezas/Hora</th>
+                        <th>Metros OK<br>Piezas OK</th>
+                        <th>Metros NoOk<br>Piezas NoOk</th>
+                        <th style="width: 140px;">MOTIVO</th>
+                        <th>Scrap</th>
+                        <th>% Scrap<br>acumulado</th>
+                        <th style="width: 160px;">OBSERVACIONES</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="export-container" id="botones-accion">
+            <button id="btn-descargar-foto" class="save-btn">DESCARGAR</button>
+        </div>
+    </div>
+
+    <script>
+        const tbody = document.getElementById('table-body');
+        
+        // --- BASE DE DATOS DE PERFILES Y METAS ---
+        const baseDeDatosPerfiles = {
+             "H-134": 320,
+            "H-136": 548,
+           
+        };
+        
+        const configuracionTurnos = {
+            "1": { inicio: 7, horas: 8 },   
+            "2": { inicio: 15, horas: 8 },  
+            "3": { inicio: 23, horas: 8 },  
+            "4": { inicio: 7, horas: 12 },  
+            "5": { inicio: 19, horas: 12 }  
+        };
+
+        function autoCompletarMeta(selectElement) {
+            const fila = selectElement.closest('tr'); 
+            const inputMeta = fila.querySelector('.total-input');
+            const perfilSeleccionado = selectElement.value;
+
+            if (perfilSeleccionado && baseDeDatosPerfiles[perfilSeleccionado]) {
+                inputMeta.value = baseDeDatosPerfiles[perfilSeleccionado];
+            } else {
+                inputMeta.value = '';
+            }
+            realizarCalculos(); 
+        }
+
+        function generarTablaPorTurno(turnoId) {
+            tbody.innerHTML = ''; 
+            let horaActual = configuracionTurnos[turnoId].inicio;
+            let totalHoras = configuracionTurnos[turnoId].horas;
+
+            let opcionesSelect = '<option value=""></option>';
+            for (const nombrePerfil in baseDeDatosPerfiles) {
+                opcionesSelect += `<option value="${nombrePerfil}">${nombrePerfil}</option>`;
+            }
+
+            for(let i = 0; i < totalHoras; i++) {
+                let horaSiguiente = (horaActual + 1) % 24; 
+                
+                let formatoActual = horaActual.toString().padStart(2, '0') + ':00';
+                let formatoSiguiente = horaSiguiente.toString().padStart(2, '0') + ':00';
+
+                // --- CELDA DE 4 CUADRITOS (APILADA VERTICALMENTE CON CSS) ---
+                const celdaDividida = `
+                    <td class="status-container">
+                        <div class="quad-grid">
+                            <div class="quad-cell" onclick="toggleColor(this)"></div>
+                            <div class="quad-cell" onclick="toggleColor(this)"></div>
+                            <div class="quad-cell" onclick="toggleColor(this)"></div>
+                            <div class="quad-cell" onclick="toggleColor(this)"></div>
+                        </div>
+                    </td>
+                `;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="time-cell">${formatoActual}<br>${formatoSiguiente}</td>
+                    
+                    ${celdaDividida}
+                    ${celdaDividida}
+                    ${celdaDividida}
+                    
+                    <td>
+                        <select class="input-field perfil-input" onchange="autoCompletarMeta(this)">
+                            ${opcionesSelect}
+                        </select>
+                    </td>
+                    
+                    <td><input type="number" class="input-field total-input" placeholder="Meta"></td>
+                    
+                    <td class="split-cell">
+                        <svg class="diagonal-line" width="100%" height="100%"><line x1="0" y1="100%" x2="100%" y2="0" stroke="#666666" stroke-width="1.5"></line></svg>
+                        <input type="number" class="input-top ok-m-input">
+                        <input type="number" class="input-bottom ok-p-input">
+                    </td>
+                    <td class="split-cell">
+                        <svg class="diagonal-line" width="100%" height="100%"><line x1="0" y1="100%" x2="100%" y2="0" stroke="#666666" stroke-width="1.5"></line></svg>
+                        <input type="number" class="input-top nook-m-input">
+                        <input type="number" class="input-bottom nook-p-input">
+                    </td>
+                    
+                    <td><input type="text" class="input-field motivo-input"></td>
+                    <td><input type="text" class="input-field scrap-input" readonly></td>
+                    <td><input type="text" class="input-field scrap-acum-input" readonly></td>
+                    <td><input type="text" class="input-field obs-input"></td>
+                `;
+                tbody.appendChild(tr);
+                horaActual = horaSiguiente;
+            }
+        }
+
+        generarTablaPorTurno("4");
+
+        document.getElementById('turno-select').addEventListener('change', function(e) {
+            generarTablaPorTurno(e.target.value);
+        });
+
+        function toggleColor(cell) {
+            const currentColor = cell.style.backgroundColor;
+            if (currentColor === 'rgb(0, 166, 80)') { 
+                cell.style.backgroundColor = '#e53935'; 
+            } else if (currentColor === 'rgb(229, 57, 53)') { 
+                cell.style.backgroundColor = ''; 
+            } else {
+                cell.style.backgroundColor = '#00a650'; 
+            }
+        }
+
+        // --- NUEVA MATEMÁTICA: Piezas[i-1] + Metros[i] = Piezas[i] ---
         function realizarCalculos() {
             const rows = document.querySelectorAll('#table-body tr');
             
@@ -109,8 +314,10 @@
                     propagarCascada = true;
 
                 } else if (propagarCascada) {
+                    // A partir de la segunda fila, la matemática automática entra en acción
                     if (topOkStr !== "" || topNoOkStr !== "" || topOkStr === "0" || topNoOkStr === "0") { 
                         
+                        // Piezas 1ra hora + Metros 2da hora = Nuevas Piezas
                         acumuladoOk = acumuladoOk + topOk;
                         acumuladoNoOk = acumuladoNoOk + topNoOk;
 
@@ -163,3 +370,54 @@
                 }
             });
         }
+
+        const tabla = document.getElementById('production-table');
+        tabla.addEventListener('input', realizarCalculos);
+
+        // --- Descargar como Foto ---
+        document.getElementById('btn-descargar-foto').addEventListener('click', function() {
+            const tablero = document.getElementById('tablero-principal');
+            const contenedorBotones = document.getElementById('botones-accion');
+            const contenedorTabla = document.querySelector('.table-responsive');
+            
+            contenedorBotones.style.display = 'none';
+            
+            const estilosOriginalesTablero = tablero.style.cssText;
+            const estilosOriginalesTabla = contenedorTabla.style.cssText;
+            
+            tablero.style.width = '1400px';
+            tablero.style.maxWidth = '1400px';
+            tablero.style.margin = '0';
+            contenedorTabla.style.overflowX = 'visible';
+            
+            setTimeout(() => {
+                html2canvas(tablero, {
+                    scale: 2, 
+                    backgroundColor: "#ffffff",
+                    logging: false,
+                    useCORS: true,
+                    windowWidth: 1400
+                }).then(canvas => {
+                    tablero.style.cssText = estilosOriginalesTablero;
+                    contenedorTabla.style.cssText = estilosOriginalesTabla;
+                    contenedorBotones.style.display = 'flex';
+                    
+                    const fecha = document.getElementById('fecha-tablero').value || "Sin_Fecha";
+                    const linea = document.getElementById('line-select').value;
+                    const link = document.createElement('a');
+                    
+                    link.download = `Tablero_Linea${linea}_${fecha}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }).catch(err => {
+                    console.error("Error al generar la imagen:", err);
+                    alert("Hubo un problema al crear la imagen.");
+                    tablero.style.cssText = estilosOriginalesTablero;
+                    contenedorTabla.style.cssText = estilosOriginalesTabla;
+                    contenedorBotones.style.display = 'flex'; 
+                });
+            }, 150);
+        });
+    </script>
+</body>
+</html>
