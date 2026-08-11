@@ -95,9 +95,9 @@
         
         // --- BASE DE DATOS DE PERFILES Y METAS ---
         const baseDeDatosPerfiles = {
-            "H-134": 320,
+             "H-134": 320,
             "H-136": 548,
-            
+           
         };
         
         const configuracionTurnos = {
@@ -137,12 +137,25 @@
                 let formatoActual = horaActual.toString().padStart(2, '0') + ':00';
                 let formatoSiguiente = horaSiguiente.toString().padStart(2, '0') + ':00';
 
+                // --- CELDA DE 4 CUADRITOS (APILADA VERTICALMENTE CON CSS) ---
+                const celdaDividida = `
+                    <td class="status-container">
+                        <div class="quad-grid">
+                            <div class="quad-cell" onclick="toggleColor(this)"></div>
+                            <div class="quad-cell" onclick="toggleColor(this)"></div>
+                            <div class="quad-cell" onclick="toggleColor(this)"></div>
+                            <div class="quad-cell" onclick="toggleColor(this)"></div>
+                        </div>
+                    </td>
+                `;
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="time-cell">${formatoActual}<br>${formatoSiguiente}</td>
-                    <td class="status-cell" onclick="toggleColor(this)"></td>
-                    <td class="status-cell" onclick="toggleColor(this)"></td>
-                    <td class="status-cell" onclick="toggleColor(this)"></td>
+                    
+                    ${celdaDividida}
+                    ${celdaDividida}
+                    ${celdaDividida}
                     
                     <td>
                         <select class="input-field perfil-input" onchange="autoCompletarMeta(this)">
@@ -190,7 +203,7 @@
             }
         }
 
-        // --- CÁLCULOS MATEMÁTICOS (RESETEO DE PERFIL Y CASCADA INTELIGENTE) ---
+        // --- NUEVA MATEMÁTICA: Piezas[i-1] + Metros[i] = Piezas[i] ---
         function realizarCalculos() {
             const rows = document.querySelectorAll('#table-body tr');
             
@@ -202,16 +215,17 @@
             let lastScrapAcumText = "";
             let lastScrapAcumColor = "";
             
-            // Bandera para saber si debemos arrastrar la suma a la celda de abajo
             let propagarCascada = false; 
 
-            rows.forEach((row) => {
+            rows.forEach((row, index) => {
                 const selectVal = row.querySelector('.perfil-input').value;
                 const inputMetaStr = row.querySelector('.total-input').value;
+                
                 const inputOkM = row.querySelector('.ok-m-input');   
                 const inputNoOkM = row.querySelector('.nook-m-input'); 
                 const inputOkP = row.querySelector('.ok-p-input');     
                 const inputNoOkP = row.querySelector('.nook-p-input'); 
+                
                 const scrapInput = row.querySelector('.scrap-input');
                 const scrapAcumInput = row.querySelector('.scrap-acum-input');
 
@@ -220,109 +234,124 @@
                 let bottomOkStr = inputOkP.value.trim();
                 let bottomNoOkStr = inputNoOkP.value.trim();
 
-                // 1. Detección de Cambio de Perfil (RESETEO)
-                // Si escoges un perfil diferente, las sumas caen a cero.
+                let isFirstRowOfSequence = false;
+
+                // Detecta si es la primera hora del turno o si cambiaste de perfil
                 if (selectVal !== "" && selectVal !== perfilActual) {
                     perfilActual = selectVal;
-                    acumuladoOk = 0;
-                    acumuladoNoOk = 0;
                     propagarCascada = true; 
+                    isFirstRowOfSequence = true;
+                } else if (index === 0) {
+                    propagarCascada = true;
+                    isFirstRowOfSequence = true;
                 }
 
-                // 2. Memoria de la Meta
                 const inputMeta = parseFloat(inputMetaStr);
                 if (!isNaN(inputMeta) && inputMeta > 0) {
                     metaActual = inputMeta;
                 }
 
-                // 3. Arrastre hacia las celdas de Abajo (Acumulado Anterior)
-                if (propagarCascada) {
-                    if (acumuladoOk > 0 || acumuladoNoOk > 0) {
-                        inputOkP.value = acumuladoOk;
-                        inputNoOkP.value = acumuladoNoOk;
-                    } else {
-                        // Es un arranque limpio o hubo cambio de perfil.
-                        // Limpiamos los acumulados a menos que hayas escrito uno manualmente.
-                        if (bottomOkStr !== "" && bottomOkStr !== "0") {
-                            acumuladoOk = parseFloat(bottomOkStr) || 0;
+                let topOk = parseFloat(topOkStr) || 0;
+                let topNoOk = parseFloat(topNoOkStr) || 0;
+                let bottomOk = parseFloat(bottomOkStr) || 0;
+                let bottomNoOk = parseFloat(bottomNoOkStr) || 0;
+
+                let hasHourlyData = topOkStr !== "" || topNoOkStr !== "" || topOkStr === "0" || topNoOkStr === "0" || bottomOkStr !== "" || bottomNoOkStr !== "";
+
+                if (isFirstRowOfSequence) {
+                    // ¡AQUÍ ESTÁ LA MAGIA!
+                    // Si es la primera fila, NO sobreescribimos la celda de abajo. 
+                    // Simplemente memorizamos lo que tú hayas escrito manualmente.
+                    acumuladoOk = bottomOk;
+                    acumuladoNoOk = bottomNoOk;
+
+                    if (hasHourlyData) {
+                        if (metaActual > 0) {
+                            let scrapFila = (topNoOk / metaActual) * 100;
+                            scrapInput.value = parseFloat(scrapFila.toFixed(1)) + '%';
+                            scrapInput.style.color = scrapFila > 5 ? '#e53935' : '#00a650';
+                        } else if (topNoOk > 0) {
+                            scrapInput.value = 'Falta Meta';
+                            scrapInput.style.color = '#e53935';
                         } else {
-                            inputOkP.value = ""; 
+                            scrapInput.value = '';
                         }
-                        if (bottomNoOkStr !== "" && bottomNoOkStr !== "0") {
-                            acumuladoNoOk = parseFloat(bottomNoOkStr) || 0;
+
+                        let granTotal = acumuladoOk + acumuladoNoOk;
+                        if (granTotal > 0) {
+                            let scrapAcum = (acumuladoNoOk / granTotal) * 100;
+                            lastScrapAcumText = parseFloat(scrapAcum.toFixed(1)) + '%';
+                            lastScrapAcumColor = scrapAcum > 5 ? '#e53935' : '#00a650';
+                            
+                            scrapAcumInput.value = lastScrapAcumText;
+                            scrapAcumInput.style.color = lastScrapAcumColor;
                         } else {
-                            inputNoOkP.value = "";
+                            scrapAcumInput.value = '0%';
+                            scrapAcumInput.style.color = '#00a650';
+                            lastScrapAcumText = '0%';
+                            lastScrapAcumColor = '#00a650';
                         }
-                    }
-                } else {
-                    // Detiene la cascada para que no llene toda la tabla hacia abajo
-                    inputOkP.value = "";
-                    inputNoOkP.value = "";
-                }
-
-                // 4. Leer la Producción de la Hora Actual y Sumar
-                let prodOk = parseFloat(topOkStr) || 0;
-                let prodNoOk = parseFloat(topNoOkStr) || 0;
-                
-                // Leemos las celdas de abajo otra vez por si se acaban de autollenar
-                let bottomOkVal = parseFloat(inputOkP.value) || 0;
-                let bottomNoOkVal = parseFloat(inputNoOkP.value) || 0;
-
-                // El sistema detecta si escribiste algo, INCLUSO un 0.
-                let hasAnyData = topOkStr !== "" || topNoOkStr !== "" || inputOkP.value !== "" || inputNoOkP.value !== "";
-
-                if (hasAnyData || topOkStr === "0" || topNoOkStr === "0") { 
-                    
-                    // Scrap de la Fila Actual
-                    if (metaActual > 0) {
-                        let scrapFila = (prodNoOk / metaActual) * 100;
-                        scrapInput.value = parseFloat(scrapFila.toFixed(1)) + '%';
-                        scrapInput.style.color = scrapFila > 5 ? '#e53935' : '#00a650';
-                    } else if (prodNoOk > 0) {
-                        scrapInput.value = 'Falta Meta';
-                        scrapInput.style.color = '#e53935';
                     } else {
                         scrapInput.value = '';
-                    }
-
-                    // Se hace la suma maestra para arrastrarla a la SIGUIENTE fila
-                    acumuladoOk = bottomOkVal + prodOk;
-                    acumuladoNoOk = bottomNoOkVal + prodNoOk;
-
-                    // Scrap Acumulado del Turno
-                    let granTotal = acumuladoOk + acumuladoNoOk;
-                    if (granTotal > 0) {
-                        let scrapAcum = (acumuladoNoOk / granTotal) * 100;
-                        lastScrapAcumText = parseFloat(scrapAcum.toFixed(1)) + '%';
-                        lastScrapAcumColor = scrapAcum > 5 ? '#e53935' : '#00a650';
-                        
-                        scrapAcumInput.value = lastScrapAcumText;
-                        scrapAcumInput.style.color = lastScrapAcumColor;
-                    } else {
-                        scrapAcumInput.value = '0%';
-                        scrapAcumInput.style.color = '#00a650';
-                        lastScrapAcumText = '0%';
-                        lastScrapAcumColor = '#00a650';
-                    }
-                } else {
-                    // Celdas vacías esperando
-                    scrapInput.value = '';
-                    
-                    // Si estamos en medio de un turno, mantenemos visible el acumulado final
-                    if (propagarCascada && metaActual > 0 && lastScrapAcumText !== "") {
-                        scrapAcumInput.value = lastScrapAcumText;
-                        scrapAcumInput.style.color = lastScrapAcumColor;
-                    } else {
                         scrapAcumInput.value = '';
                     }
-                }
 
-                // 5. ¿Deberíamos arrastrar a la próxima fila?
-                // Si la fila actual está completamente en blanco, frenamos la cascada visual
-                if (topOkStr === "" && topNoOkStr === "") {
-                    propagarCascada = false;
-                } else {
                     propagarCascada = true;
+
+                } else if (propagarCascada) {
+                    // A partir de la segunda fila, la matemática automática entra en acción
+                    if (topOkStr !== "" || topNoOkStr !== "" || topOkStr === "0" || topNoOkStr === "0") { 
+                        
+                        // Piezas 1ra hora + Metros 2da hora = Nuevas Piezas
+                        acumuladoOk = acumuladoOk + topOk;
+                        acumuladoNoOk = acumuladoNoOk + topNoOk;
+
+                        inputOkP.value = acumuladoOk;
+                        inputNoOkP.value = acumuladoNoOk;
+
+                        if (metaActual > 0) {
+                            let scrapFila = (topNoOk / metaActual) * 100;
+                            scrapInput.value = parseFloat(scrapFila.toFixed(1)) + '%';
+                            scrapInput.style.color = scrapFila > 5 ? '#e53935' : '#00a650';
+                        } else if (topNoOk > 0) {
+                            scrapInput.value = 'Falta Meta';
+                            scrapInput.style.color = '#e53935';
+                        } else {
+                            scrapInput.value = '';
+                        }
+
+                        let granTotal = acumuladoOk + acumuladoNoOk;
+                        if (granTotal > 0) {
+                            let scrapAcum = (acumuladoNoOk / granTotal) * 100;
+                            lastScrapAcumText = parseFloat(scrapAcum.toFixed(1)) + '%';
+                            lastScrapAcumColor = scrapAcum > 5 ? '#e53935' : '#00a650';
+                            
+                            scrapAcumInput.value = lastScrapAcumText;
+                            scrapAcumInput.style.color = lastScrapAcumColor;
+                        } else {
+                            scrapAcumInput.value = '0%';
+                            scrapAcumInput.style.color = '#00a650';
+                            lastScrapAcumText = '0%';
+                            lastScrapAcumColor = '#00a650';
+                        }
+                    } else {
+                        inputOkP.value = "";
+                        inputNoOkP.value = "";
+                        scrapInput.value = '';
+                        
+                        if (metaActual > 0 && lastScrapAcumText !== "") {
+                            scrapAcumInput.value = lastScrapAcumText;
+                            scrapAcumInput.style.color = lastScrapAcumColor;
+                        } else {
+                            scrapAcumInput.value = '';
+                        }
+                        propagarCascada = false; 
+                    }
+                } else {
+                    inputOkP.value = "";
+                    inputNoOkP.value = "";
+                    scrapInput.value = '';
+                    scrapAcumInput.value = '';
                 }
             });
         }
