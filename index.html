@@ -161,6 +161,22 @@ label.btn { display: inline-block; }
   .paper p, .paper .actions, .paper .codefoot { opacity: 1; transform: none; }
   .term .cur { animation: none; }
 }
+/* ---- Celular: tarjetas y carta más compactas para que se vea el jardín ---- */
+@media (max-width: 700px) {
+  .caption { left: 10px; right: 10px; max-width: none; bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: .6rem .8rem .7rem; border-radius: 12px; max-height: 34vh; overflow-y: auto;
+    background: rgba(12, 16, 48, .5); }
+  .caption .code { display: none; }
+  .eyebrow { font-size: .58rem; margin-bottom: .15rem; }
+  .caption h2 { font-size: 1rem; margin-bottom: .25rem; }
+  .caption .txt { font-size: .78rem; line-height: 1.38; margin-bottom: .5rem; }
+  .caption .btn { padding: .4rem .9rem; font-size: .8rem; }
+  .dock { left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .dock p { font-size: .78rem; line-height: 1.35; padding: .4rem .65rem; }
+  .paper { padding: 1rem .95rem .9rem; font-size: 1.02rem; line-height: 1.27; }
+  .paper .codefoot { display: none; }
+  .paper .btn { padding: .45rem 1rem; font-size: .85rem; }
+}
 
 </style>
 
