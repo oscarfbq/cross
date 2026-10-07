@@ -161,6 +161,20 @@ label.btn { display: inline-block; }
   .paper p, .paper .actions, .paper .codefoot { opacity: 1; transform: none; }
   .term .cur { animation: none; }
 }
+   @media (max-width: 600px) {
+  .caption { left: 10px; right: 10px; max-width: none; bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: .65rem .8rem .75rem; max-height: 36vh; overflow-y: auto;
+    background: rgba(12, 16, 48, .5); border-radius: 12px; }
+  .caption .code { display: none; }
+  .eyebrow { font-size: .6rem; margin-bottom: .2rem; }
+  .caption h2 { font-size: 1.05rem; margin-bottom: .3rem; }
+  .caption .txt { font-size: .8rem; line-height: 1.4; margin-bottom: .55rem; }
+  .caption .btn { padding: .45rem .95rem; font-size: .82rem; }
+  .dock { left: 10px; right: 10px; }
+  .dock p { font-size: .8rem; padding: .45rem .7rem; }
+  .paper { padding: 1.1rem 1rem 1rem; font-size: 1.1rem; line-height: 1.28; }
+  .intro h1 { font-size: 2rem; }
+}
 </style>
 
 <canvas id="c" role="img" aria-label="Un jardín animado que se recorre de amanecer a noche"></canvas>
